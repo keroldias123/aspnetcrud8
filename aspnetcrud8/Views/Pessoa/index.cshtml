@@ -1,0 +1,282 @@
+﻿@{
+    ViewData["Title"] = "Pessoa Page";
+}
+@model IEnumerable<Pessoa>
+
+<style>
+    /* Estilo para a linha selecionada */
+    .linha-selecionada {
+        background-color: blue !important;
+        color: white !important;
+    }
+</style>
+<div class="container mt-4">
+    <h2>Lista de Pessoas</h2>
+    <!-- Botão para abrir o modal de adicionar pessoa -->
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalPessoa" onclick="openModal()">Adicionar Nova Pessoa</button>
+    <!-- Botões Fora da Tabela -->
+    <div class="mb-3">
+        <button id="btnEditar" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditar" disabled>
+            Editar
+        </button>
+    </div>
+    <!-- Tabela -->
+        <button id="btnExcluir" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalExcluir" disabled>
+            Excluir
+        </button>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pessoa in Model)
+            {
+                <tr data-id="@pessoa.Id" data-nome="@pessoa.Name" class="linha-clicavel">
+                    <td style="cursor: pointer; ">@pessoa.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalPessoa" tabindex="-1" aria-labelledby="modalPessoaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPessoaLabel">Cadastrar Pessoa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formPessoa" method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="Id" name="Id" />
+                    <div class="mb-3">
+                        <label for="Name" class="form-label">Nome</label>
+                        <input type="text" id="Name" name="Name" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/Pessoa/Editar">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarLabel">Editar Pessoa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editarId" name="Id">
+                    <div class="mb-3">
+                        <label for="editarNome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="editarNome" name="Name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação -->
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-labelledby="modalExcluirLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalExcluirLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir <strong id="nomePessoa"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExcluir" method="post">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@section Scripts {
+    <script>
+        // Função para abrir o modal (criar ou editar)
+        function openModal(id = null, name = '') {
+            // Alterar o título do modal conforme a operação
+            document.getElementById('modalPessoaLabel').textContent = id ? 'Editar Pessoa' : 'Adicionar Pessoa';
+
+            // Configurar os valores nos campos
+            document.getElementById('Id').value = id || '';
+            document.getElementById('Name').value = name || '';
+
+            // Alterar a ação do formulário
+            const form = document.getElementById('formPessoa');
+           form.action = id
+        ? `@Url.Action("Edit", "Pessoa")?id=${id}` // Para edição
+        : `@Url.Action("Create", "Pessoa")`;       // Para criação
+
+            // Abrir o modal
+            $('#modalPessoa').modal('show');
+        }
+
+        // Função para enviar o formulário via Ajax
+        $('#formPessoa').on('submit', function (e) {
+            e.preventDefault(); // Evita o envio tradicional do formulário
+
+            const form = $(this);
+            const formData = form.serialize();
+
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        // Fechar o modal se a operação for bem-sucedida
+                        $('#modalPessoa').modal('hide');
+
+                        // Opcional: Atualizar a lista de pessoas na página ou apenas recarregar a lista
+                        window.location.reload(); // Atualiza a página (pode ser substituído por uma atualização parcial)
+
+                        // Exibir mensagem de sucesso (pode ser feito via toast, alert, etc.)
+                        alert(response.message);
+                    } else {
+                        alert(response.message); // Exibir mensagem de erro
+                    }
+                },
+                error: function () {
+                    alert("Ocorreu um erro inesperado.");
+                }
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Adicionar evento de clique nas linhas
+            $('.linha-clicavel').on('click', function () {
+                // Remover a classe de seleção de outras linhas
+                $('.linha-clicavel').removeClass('linha-selecionada');
+
+                // Adicionar a classe de seleção à linha clicada
+                $(this).addClass('linha-selecionada');
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            // Quando uma linha é clicada, ativar os botões e configurar os dados
+            $('.linha-clicavel').on('click', function () {
+                const pessoaId = $(this).data('id');
+                const pessoaNome = $(this).data('nome');
+
+                // Habilitar botões
+                $('#btnEditar').prop('disabled', false).data('id', pessoaId).data('nome', pessoaNome);
+                $('#btnExcluir').prop('disabled', false).data('id', pessoaId).data('nome', pessoaNome);
+            });
+
+            // Configuração para o botão Editar
+            $('#btnEditar').on('click', function () {
+                const pessoaId = $(this).data('id');
+                const pessoaNome = $(this).data('nome');
+
+                // Preencher o modal de edição com os dados
+                $('#editarId').val(pessoaId);
+                $('#editarNome').val(pessoaNome);
+
+                // Abrir o modal
+                $('#modalEditar').modal('show');
+            });
+
+            // Configuração para salvar edição via AJAX
+            $('#formEditar').on('submit', function (e) {
+                e.preventDefault();
+
+                const formData = $(this).serialize(); // Serializa os dados do formulário
+
+                $.ajax({
+                    url: '/Pessoa/Editar',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        alert('Registro atualizado com sucesso!');
+                        location.reload(); // Recarrega a página
+                    },
+                    error: function () {
+                        alert('Erro ao atualizar registro.');
+                    }
+                });
+            });
+
+            // Funções para Exclusão
+            const modalExcluir = document.getElementById('modalExcluir');
+            const nomePessoa = document.getElementById('nomePessoa');
+            const formExcluir = document.getElementById('formExcluir');
+            const btnExcluir = document.getElementById('btnExcluir');
+
+            // Habilitar o botão de excluir quando uma linha for clicada
+            $('.linha-clicavel').on('click', function () {
+                const idPessoa = $(this).data('id');
+                const nome = $(this).data('nome');
+
+                // Habilitar o botão Excluir e armazenar as informações
+                btnExcluir.removeAttribute('disabled');
+                btnExcluir.setAttribute('data-id', idPessoa);
+                btnExcluir.setAttribute('data-nome', nome);
+            });
+
+            modalExcluir.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const idPessoa = button.getAttribute('data-id');
+                const nome = button.getAttribute('data-nome');
+
+                nomePessoa.textContent = nome;
+                formExcluir.setAttribute('data-id', idPessoa); // Armazena o ID no form
+            });
+
+            formExcluir.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const pessoaId = formExcluir.getAttribute('data-id'); // Pega o ID do usuário a partir do atributo 'data-id'
+
+                // Envia a requisição AJAX para excluir o usuário
+                $.ajax({
+                    url: `/Pessoa/Delete/${pessoaId}`,
+                    type: 'POST', // Usando POST em vez de DELETE devido a limitações de alguns navegadores
+                    success: function (response) {
+                        if (response.success) {
+                            $('#modalExcluir').modal('hide'); // Fecha o modal
+                            alert('Registro excluído com sucesso!');
+                            location.reload(); // Recarrega a página principal
+                        } else {
+                            alert(response.message || 'Erro ao excluir registro.');
+                        }
+                    },
+                    error: function () {
+                        alert('Erro ao excluir registro.');
+                    }
+                });
+            });
+        });
+    </script>
+
+
+
+
+}
